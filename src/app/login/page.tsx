@@ -3,42 +3,54 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
-import { Box, Card, CardContent, TextField, Button, Typography, Container, InputAdornment, IconButton } from '@mui/material';
+import {
+  Box,
+  Card,
+  CardContent,
+  TextField,
+  Button,
+  Typography,
+  Container,
+  InputAdornment,
+  IconButton,
+  useTheme,
+  useMediaQuery
+} from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { setUser, setLoading, setError } from '@/store/slices/authSlice';
-import { authApi } from '@/apis/auth';
-import { RootState } from '@/store';
+import { firebaseLogin } from '@/config/firebase';
+import { userApi } from '@/apis/users';
+import type { RootState } from '@/store';
 
 export default function LoginPage() {
-  const [mounted, setMounted] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const dispatch = useDispatch();
   const router = useRouter();
-  const { loading, error, user } = useSelector((state: RootState) => state.auth);
-
-  useEffect(() => {
-    setMounted(true);
-    if (user) {
-      router.push('/dashboard');
-    }
-  }, [user, router]);
-
-  if (!mounted) {
-    return null;
-  }
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { loading, error } = useSelector((state: RootState) => state.auth);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     dispatch(setLoading(true));
+    dispatch(setError(null));
     
     try {
-      const response = await authApi.login(email, password);
-      dispatch(setUser(response.user));
+      // Firebase Authentication
+      const firebaseUser = await firebaseLogin(email, password);
+      const token = await firebaseUser.getIdToken();
+      
+      // Fetch user data from your API
+      const userData = await userApi.fetchUsersData(token);
+      
+      dispatch(setUser({ ...userData, token }));
       router.push('/dashboard');
     } catch (err) {
       dispatch(setError(err instanceof Error ? err.message : 'Login failed'));
+    } finally {
+      dispatch(setLoading(false));
     }
   };
 
@@ -48,20 +60,19 @@ export default function LoginPage() {
         sx={{
           minHeight: '100vh',
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          p: { xs: 2, sm: 4 }
+          p: isMobile ? 2 : 4
         }}
       >
-        <Card sx={{ width: '100%', maxWidth: 400, boxShadow: 3 }}>
-          <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
+        <Card sx={{ width: '100%', maxWidth: 400 }}>
+          <CardContent sx={{ p: isMobile ? 2 : 4 }}>
             <Typography 
               variant="h4" 
               component="h1" 
               gutterBottom 
-              align="center" 
-              sx={{ mb: 4, fontWeight: 'bold' }}
+              align="center"
+              sx={{ mb: 4 }}
             >
               Welcome Back
             </Typography>
