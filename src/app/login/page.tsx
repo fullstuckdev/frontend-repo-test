@@ -1,27 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  Box,
-  Card,
-  CardContent,
-  TextField,
-  Button,
-  Typography,
-  Container,
-} from '@mui/material';
 import { useRouter } from 'next/navigation';
+import { Box, Card, CardContent, TextField, Button, Typography, Container, InputAdornment, IconButton } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { setUser, setLoading, setError } from '@/store/slices/authSlice';
 import { authApi } from '@/apis/auth';
 import { RootState } from '@/store';
 
 export default function LoginPage() {
+  const [mounted, setMounted] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const dispatch = useDispatch();
   const router = useRouter();
-        const { loading, error } = useSelector((state: RootState) => state.auth);
+  const { loading, error, user } = useSelector((state: RootState) => state.auth);
+
+  useEffect(() => {
+    setMounted(true);
+    if (user) {
+      router.push('/dashboard');
+    }
+  }, [user, router]);
+
+  if (!mounted) {
+    return null;
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,14 +48,22 @@ export default function LoginPage() {
         sx={{
           minHeight: '100vh',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
+          p: { xs: 2, sm: 4 }
         }}
       >
-        <Card sx={{ width: '100%', maxWidth: 400 }}>
-          <CardContent>
-            <Typography variant="h5" component="h1" gutterBottom align="center">
-              Login
+        <Card sx={{ width: '100%', maxWidth: 400, boxShadow: 3 }}>
+          <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
+            <Typography 
+              variant="h4" 
+              component="h1" 
+              gutterBottom 
+              align="center" 
+              sx={{ mb: 4, fontWeight: 'bold' }}
+            >
+              Welcome Back
             </Typography>
             <form onSubmit={handleLogin}>
               <TextField
@@ -60,18 +74,31 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 margin="normal"
                 required
+                sx={{ mb: 2 }}
               />
               <TextField
                 fullWidth
                 label="Password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 margin="normal"
                 required
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
               />
               {error && (
-                <Typography color="error" sx={{ mt: 2 }}>
+                <Typography color="error" sx={{ mt: 2, textAlign: 'center' }}>
                   {error}
                 </Typography>
               )}
@@ -80,9 +107,15 @@ export default function LoginPage() {
                 variant="contained"
                 type="submit"
                 disabled={loading}
-                sx={{ mt: 3 }}
+                size="large"
+                sx={{ 
+                  mt: 4,
+                  mb: 2,
+                  py: 1.5,
+                  fontSize: '1.1rem'
+                }}
               >
-                {loading ? 'Loading...' : 'Login'}
+                {loading ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
           </CardContent>
