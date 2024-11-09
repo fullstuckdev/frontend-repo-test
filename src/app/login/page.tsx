@@ -32,19 +32,25 @@ export default function LoginPage() {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { loading, error } = useSelector((state: RootState) => state.auth);
 
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      router.push('/dashboard');
+    }
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     dispatch(setLoading(true));
     dispatch(setError(null));
     
     try {
-      // Firebase Authentication
       const firebaseUser = await firebaseLogin(email, password);
       const token = await firebaseUser.getIdToken();
       
-      // Fetch user data from your API
       const userData = await userApi.fetchUsersData(token);
       
+      localStorage.setItem('token', token);
       dispatch(setUser({ ...userData, token }));
       router.push('/dashboard');
     } catch (err) {

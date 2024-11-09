@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
+import { useRouter } from 'next/navigation';
+import { useDispatch } from 'react-redux';
 import {
   Box,
   Typography,
@@ -32,6 +34,7 @@ import { userApi } from '@/apis/users';
 import type { RootState } from '@/store';
 import type { User } from '@/types';
 import { handleApiError } from '@/utils/errorHandler';
+import { setUser } from '@/store/slices/authSlice';
 
 interface UserData extends User {
   createdAt: string;
@@ -143,6 +146,25 @@ export default function DashboardPage() {
     message: '',
     severity: 'info'
   });
+  const router = useRouter();
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/');
+    }
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      localStorage.removeItem('token');
+      dispatch(setUser(null));
+      router.push('/');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
   const fetchUsers = async () => {
     if (!currentUser?.token) {
@@ -229,14 +251,23 @@ export default function DashboardPage() {
       <Box py={4}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
           <Typography variant="h4">Users Management</Typography>
-          <Button
-            variant="contained"
-            startIcon={<RefreshIcon />}
-            onClick={fetchUsers}
-            disabled={loading}
-          >
-            Refresh
-          </Button>
+          <Box display="flex" gap={2}>
+            <Button
+              variant="contained"
+              startIcon={<RefreshIcon />}
+              onClick={fetchUsers}
+              disabled={loading}
+            >
+              Refresh
+            </Button>
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={handleLogout}
+            >
+              Logout
+            </Button>
+          </Box>
         </Box>
 
         <Card>
