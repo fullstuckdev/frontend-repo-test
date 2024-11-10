@@ -61,24 +61,73 @@ export default function LoginPage() {
   };
 
   return (
-    <Container maxWidth="sm">
+    <Container maxWidth={false} disableGutters>
       <Box
         sx={{
           minHeight: '100vh',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          p: isMobile ? 2 : 4
+          background: 'linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%)',
+          position: 'relative',
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            width: '140%',
+            height: '140%',
+            background: 'radial-gradient(circle, rgba(255,255,255,0.2) 2px, transparent 3px)',
+            backgroundSize: '50px 50px',
+            animation: 'rotate 60s linear infinite',
+            opacity: 0.5,
+          },
+          '@keyframes rotate': {
+            '0%': { transform: 'rotate(0deg)' },
+            '100%': { transform: 'rotate(360deg)' },
+          },
         }}
       >
-        <Card sx={{ width: '100%', maxWidth: 400 }}>
-          <CardContent sx={{ p: isMobile ? 2 : 4 }}>
+        <Card 
+          sx={{ 
+            width: '100%', 
+            maxWidth: 450,
+            mx: 3,
+            borderRadius: '24px',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.15)',
+            backdropFilter: 'blur(20px)',
+            background: 'rgba(255, 255, 255, 0.9)',
+            position: 'relative',
+            overflow: 'visible',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: '-15px',
+              left: '-15px',
+              right: '-15px',
+              bottom: '-15px',
+              background: 'linear-gradient(135deg, rgba(255,107,107,0.5) 0%, rgba(78,205,196,0.5) 100%)',
+              borderRadius: '32px',
+              zIndex: -1,
+              filter: 'blur(20px)',
+            },
+          }}
+        >
+          <CardContent sx={{ p: isMobile ? 4 : 6 }}>
             <Typography 
-              variant="h4" 
+              variant="h3" 
               component="h1" 
               gutterBottom 
               align="center"
-              sx={{ mb: 4 }}
+              sx={{ 
+                mb: 5,
+                fontWeight: 800,
+                background: 'linear-gradient(45deg, #FF6B6B 30%, #4ECDC4 90%)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                textShadow: '0 2px 10px rgba(0,0,0,0.1)',
+                letterSpacing: '-0.5px',
+              }}
             >
               Welcome Back
             </Typography>
@@ -91,7 +140,22 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 margin="normal"
                 required
-                sx={{ mb: 2 }}
+                sx={{ 
+                  mb: 3,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '16px',
+                    background: 'rgba(255,255,255,0.9)',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
+                    },
+                    '&.Mui-focused': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
+                    },
+                  },
+                }}
               />
               <TextField
                 fullWidth
@@ -113,11 +177,45 @@ export default function LoginPage() {
                     </InputAdornment>
                   ),
                 }}
+                sx={{ 
+                  mb: 3,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '16px',
+                    background: 'rgba(255,255,255,0.9)',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
+                    },
+                    '&.Mui-focused': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
+                    },
+                  },
+                }}
               />
               {error && (
-                <Typography color="error" sx={{ mt: 2, textAlign: 'center' }}>
-                  {error}
-                </Typography>
+                <Box
+                  sx={{
+                    mt: 2,
+                    p: 2,
+                    borderRadius: '16px',
+                    background: 'rgba(255,107,107,0.1)',
+                    border: '1px solid rgba(255,107,107,0.3)',
+                    backdropFilter: 'blur(10px)',
+                  }}
+                >
+                  <Typography 
+                    color="#FF6B6B"
+                    sx={{ 
+                      textAlign: 'center',
+                      fontSize: '0.9rem',
+                      fontWeight: 500,
+                    }}
+                  >
+                    {error}
+                  </Typography>
+                </Box>
               )}
               <Button
                 fullWidth
@@ -127,17 +225,47 @@ export default function LoginPage() {
                 size="large"
                 sx={{ 
                   mt: 4,
-                  mb: 2,
-                  py: 1.5,
-                  fontSize: '1.1rem'
+                  py: 2,
+                  fontSize: '1.2rem',
+                  fontWeight: 700,
+                  borderRadius: '16px',
+                  textTransform: 'none',
+                  background: 'linear-gradient(45deg, #FF6B6B 30%, #4ECDC4 90%)',
+                  boxShadow: '0 8px 20px rgba(255,107,107,0.3)',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'translateY(-3px)',
+                    boxShadow: '0 12px 25px rgba(255,107,107,0.4)',
+                  },
+                  '&:active': {
+                    transform: 'translateY(-1px)',
+                  },
                 }}
               >
-                {loading ? 'Signing in...' : 'Sign In'}
+                {loading ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <span>Signing in</span>
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <span className="dot" style={{ animation: 'bounce 1.4s infinite' }}>.</span>
+                      <span className="dot" style={{ animation: 'bounce 1.4s infinite 0.2s' }}>.</span>
+                      <span className="dot" style={{ animation: 'bounce 1.4s infinite 0.4s' }}>.</span>
+                    </Box>
+                  </Box>
+                ) : 'Sign In'}
               </Button>
             </form>
           </CardContent>
         </Card>
       </Box>
+      <style jsx global>{`
+        @keyframes bounce {
+          0%, 80%, 100% { transform: translateY(0); }
+          40% { transform: translateY(-5px); }
+        }
+        .dot {
+          display: inline-block;
+        }
+      `}</style>
     </Container>
   );
 } 
