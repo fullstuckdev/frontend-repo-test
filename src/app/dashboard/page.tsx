@@ -37,8 +37,9 @@ import { setUser } from '@/store/slices/authSlice';
 import { EditDialog } from './components/EditDialog';
 import { StatusBadge } from './components/StatusBadge';
 import {  deleteUser } from 'firebase/auth';
-import { doc, deleteDoc } from 'firebase/firestore';
+import { doc, deleteDoc, getDoc } from 'firebase/firestore';
 import { db, auth } from '@/config/firebase';
+import { ProfileCard } from './components/ProfileCard';
 
 interface UserData extends User {
   createdAt: string;
@@ -74,11 +75,44 @@ export default function DashboardPage() {
     const token = localStorage.getItem('token');
     if (!token) {
       router.push('/');
-    } else if (!currentUser) {
+      return;
+    }
+
+    if (!currentUser) {
       const restoreUserSession = async () => {
         try {
-          const userData = await userApi.fetchUsersData(token);
-          dispatch(setUser({ ...userData, token }));
+          await new Promise((resolve) => {
+            const unsubscribe = auth.onAuthStateChanged((user) => {
+              unsubscribe();
+              resolve(user);
+            });
+          });
+
+          const currentAuthUser = auth.currentUser;
+          if (!currentAuthUser?.uid) {
+            throw new Error('No authenticated user found');
+          }
+
+          const userDoc = await getDoc(doc(db, 'users', currentAuthUser.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data() as Omit<User, 'id' | 'token'>;
+            
+            const newToken = await currentAuthUser.getIdToken(true);
+            localStorage.setItem('token', newToken);
+
+            dispatch(setUser({ 
+              ...userData, 
+              id: userDoc.id,
+              token: newToken,
+              isActive: userData.isActive ?? true,
+              role: userData.role || 'user',
+              displayName: userData.displayName || '',
+              photoURL: userData.photoURL || '',
+              email: userData.email || '',
+            }));
+          } else {
+            throw new Error('User data not found');
+          }
         } catch (error) {
           console.error('Failed to restore session:', error);
           localStorage.removeItem('token');
@@ -88,7 +122,7 @@ export default function DashboardPage() {
       
       restoreUserSession();
     }
-  }, []);
+  }, [currentUser, dispatch, router, auth.currentUser?.uid]);
 
   const handleLogout = async () => {
     try {
@@ -204,7 +238,9 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    fetchUsers();
+    if (currentUser?.token) {
+      fetchUsers();
+    }
   }, [currentUser?.token]);
 
   return (
@@ -321,6 +357,14 @@ export default function DashboardPage() {
               </Box>
             </Card>
 
+            {/* Profile Card */}
+            {currentUser && (
+              <ProfileCard
+                user={currentUser}
+                onUpdateUser={handleUpdateUser}
+              />
+            )}
+
             {/* Users Table */}
             <Card
               elevation={0}
@@ -333,6 +377,27 @@ export default function DashboardPage() {
                 border: '1px solid rgba(255, 255, 255, 0.3)',
               }}
             >
+              {/* Add Table Title */}
+              <Box
+                sx={{
+                  p: 2,
+                  borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                }}
+              >
+                <Typography 
+                  variant="h6"
+                  sx={{
+                    fontWeight: 600,
+                    color: '#1976D2',
+                  }}
+                >
+                  Manage Users
+                </Typography>
+              </Box>
+
               <TableContainer>
                 <Table>
                   <TableHead>
@@ -349,90 +414,92 @@ export default function DashboardPage() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {users.map((user) => (
-                      <TableRow 
-                        key={user.id} 
-                        hover
-                        sx={{
-                          '&:hover': {
-                            backgroundColor: 'rgba(25, 118, 210, 0.05)',
-                          },
-                        }}
-                      >
-                        <TableCell>
-                          <Box display="flex" alignItems="center" gap={2}>
-                            <Avatar 
-                              src={user.photoURL || undefined} 
-                              alt={user.displayName || ''}
-                              sx={{ 
-                                width: 40, 
-                                height: 40,
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    {users
+                      .filter(user => user.id !== currentUser?.id)
+                      .map((user) => (
+                        <TableRow 
+                          key={user.id} 
+                          hover
+                          sx={{
+                            '&:hover': {
+                              backgroundColor: 'rgba(25, 118, 210, 0.05)',
+                            },
+                          }}
+                        >
+                          <TableCell>
+                            <Box display="flex" alignItems="center" gap={2}>
+                              <Avatar 
+                                src={user.photoURL || undefined} 
+                                alt={user.displayName || ''}
+                                sx={{ 
+                                  width: 40, 
+                                  height: 40,
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                }}
+                              />
+                              <Typography sx={{ fontWeight: 500 }}>
+                                {user.displayName}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>
+                            <Typography
+                              sx={{
+                                px: 2,
+                                py: 0.5,
+                                borderRadius: '16px',
+                                display: 'inline-block',
+                                background: 'linear-gradient(45deg, #2196F3 30%, #4CAF50 90%)',
+                                color: 'white',
+                                fontSize: '0.875rem',
+                                fontWeight: 500,
                               }}
-                            />
-                            <Typography sx={{ fontWeight: 500 }}>
-                              {user.displayName}
+                            >
+                              {user.role}
                             </Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>
-                          <Typography
-                            sx={{
-                              px: 2,
-                              py: 0.5,
-                              borderRadius: '16px',
-                              display: 'inline-block',
-                              background: 'linear-gradient(45deg, #2196F3 30%, #4CAF50 90%)',
-                              color: 'white',
-                              fontSize: '0.875rem',
-                              fontWeight: 500,
-                            }}
-                          >
-                            {user.role}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge isActive={user.isActive} />
-                        </TableCell>
-                        <TableCell>
-                          <Box display="flex" gap={1}>
-                            <Tooltip title="Edit User">
-                              <IconButton
-                                onClick={() => {
-                                  setSelectedUser(user);
-                                  setOpenDialog(true);
-                                }}
-                                sx={{
-                                  color: '#2196F3',
-                                  '&:hover': {
-                                    backgroundColor: 'rgba(33,150,243,0.1)',
-                                  },
-                                }}
-                              >
-                                <EditIcon />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Delete User">
-                              <IconButton
-                                onClick={() => {
-                                  setUserToDelete(user);
-                                  setDeleteConfirmOpen(true);
-                                }}
-                                sx={{
-                                  color: '#D32F2F',
-                                  '&:hover': {
-                                    backgroundColor: 'rgba(211,47,47,0.1)',
-                                  },
-                                }}
-                              >
-                                <DeleteIcon />
-                              </IconButton>
-                            </Tooltip>
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          </TableCell>
+                          <TableCell>
+                            <StatusBadge isActive={user.isActive} />
+                          </TableCell>
+                          <TableCell>
+                            <Box display="flex" gap={1}>
+                              <Tooltip title="Edit User">
+                                <IconButton
+                                  onClick={() => {
+                                    setSelectedUser(user);
+                                    setOpenDialog(true);
+                                  }}
+                                  sx={{
+                                    color: '#2196F3',
+                                    '&:hover': {
+                                      backgroundColor: 'rgba(33,150,243,0.1)',
+                                    },
+                                  }}
+                                >
+                                  <EditIcon />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Delete User">
+                                <IconButton
+                                  onClick={() => {
+                                    setUserToDelete(user);
+                                    setDeleteConfirmOpen(true);
+                                  }}
+                                  sx={{
+                                    color: '#D32F2F',
+                                    '&:hover': {
+                                      backgroundColor: 'rgba(211,47,47,0.1)',
+                                    },
+                                  }}
+                                >
+                                  <DeleteIcon />
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                      ))}
                   </TableBody>
                 </Table>
               </TableContainer>

@@ -18,9 +18,12 @@ import {
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { setUser, setLoading, setError } from '@/store/slices/authSlice';
-import { firebaseLogin } from '@/config/firebase';
-import { userApi } from '@/apis/users';
 import type { RootState } from '@/store';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth } from '@/config/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import type { User } from '@/types';
+import { db } from '@/config/firebase';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -45,14 +48,27 @@ export default function LoginPage() {
     dispatch(setError(null));
     
     try {
-      const firebaseUser = await firebaseLogin(email, password);
-      const token = await firebaseUser.getIdToken();
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const token = await userCredential.user.getIdToken();
       
-      const userData = await userApi.fetchUsersData(token);
-      
-      localStorage.setItem('token', token);
-      dispatch(setUser({ ...userData, token }));
-      router.push('/dashboard');
+      const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data() as Omit<User, 'id' | 'token'>;
+        
+        dispatch(setUser({
+          ...userData,
+          id: userDoc.id,
+          token,
+          isActive: userData.isActive ?? true,
+          role: userData.role || 'user',
+          displayName: userData.displayName || '',
+          photoURL: userData.photoURL || '',
+          email: userData.email || '',
+        }));
+        
+        localStorage.setItem('token', token);
+        router.push('/dashboard');
+      }
     } catch (err) {
       dispatch(setError(err instanceof Error ? err.message : 'Login failed'));
     } finally {
