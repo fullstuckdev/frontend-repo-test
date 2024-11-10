@@ -53,10 +53,21 @@ export default function LoginPage() {
   };
 
   return (
-    <Container maxWidth={false} disableGutters>
+    <Box 
+      component="main"
+      sx={{
+        height: '100vh',
+        width: '100vw',
+        overflow: 'hidden',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+      }}
+    >
       <Box
         sx={{
-          minHeight: '100vh',
+          height: '100%',
+          width: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -155,6 +166,6 @@ export default function LoginPage() {
           40% { transform: translateY(-5px); }
         }
       `}</style>
-    </Container>
+    </Box>
   );
 } 
