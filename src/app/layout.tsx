@@ -1,13 +1,12 @@
-'use client';
 
-import { Inter } from 'next/font/google';
-import { ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
+import type { Metadata } from 'next';
 import { Providers } from './providers';
-import { theme } from '@/theme';
-import { Box } from '@mui/material';
+import '@/ui/styles/globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
+export const metadata: Metadata = {
+  title: 'My App - Home',
+  description: 'Welcome to My App',
+};
 
 export default function RootLayout({
   children,
@@ -16,10 +15,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body style={{ margin: 0, padding: 0, height: '100vh', width: '100vw', overflow: 'hidden' }}>
-        <Box sx={{ height: '100vh', width: '100vw', overflow: 'hidden' }}>
-          <Providers>{children}</Providers>
-        </Box>
+      <body suppressHydrationWarning>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
