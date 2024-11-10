@@ -1,6 +1,6 @@
 import { injectable } from 'inversify';
 import { db, auth } from '@/config/firebase';
-import { collection, doc, getDocs, getDoc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, deleteDoc, setDoc, getDocs } from 'firebase/firestore';
 import { deleteUser } from 'firebase/auth';
 import type { UserRepository } from '@/domain/repositories/userRepository';
 import type { UserData } from '@/types';
@@ -14,24 +14,25 @@ export class FirebaseUserRepository implements UserRepository {
   private readonly cache = cacheService;
   private readonly usersCacheKey = 'users';
   private readonly userCacheKeyPrefix = 'user:';
+  private readonly apiBaseUrl = 'http://127.0.0.1:5001/test-fullstack-1c6a8/us-central1/api/v1/users';
 
   async getUsers(): Promise<UserData[]> {
     const cachedUsers = this.cache.get<UserData[]>(this.usersCacheKey);
     if (cachedUsers) return cachedUsers;
 
-    const querySnapshot = await getDocs(collection(db, this.collectionName));
-    const users = querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        createdAt: data.createdAt || new Date().toISOString(),
-        updatedAt: data.updatedAt || new Date().toISOString(),
-      } as UserData;
-    });
-
-    this.cache.set(this.usersCacheKey, users);
-    return users;
+    try {
+      const response = await fetch(`${this.apiBaseUrl}/fetch-users-data`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch users: ${response.statusText}`);
+      }
+      
+      const users = await response.json();
+      this.cache.set(this.usersCacheKey, users);
+      return users;
+    } catch (error) {
+      logger.error('Failed to fetch users from API', { error });
+      throw error;
+    }
   }
 
   async getUserById(userId: string): Promise<UserData> {
@@ -62,30 +63,38 @@ export class FirebaseUserRepository implements UserRepository {
   }
 
   async updateUser(userId: string, userData: UpdateUserData): Promise<UserData> {
-    const userRef = doc(db, this.collectionName, userId);
-    const updatedData = {
-      ...userData,
-      updatedAt: new Date().toISOString()
-    };
-    
-    await updateDoc(userRef, updatedData);
-    
-    this.cache.delete(this.usersCacheKey);
-    this.cache.delete(`${this.userCacheKeyPrefix}${userId}`);
-    
-    const updatedDoc = await getDoc(userRef);
-    const data = updatedDoc.data();
-    
-    const user = {
-      id: userId,
-      ...data,
-      ...updatedData,
-      createdAt: data?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    } as UserData;
+    try {
+      const response = await fetch(`${this.apiBaseUrl}/users/update-user-data/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          displayName: userData.displayName,
+          photoURL: userData.photoURL,
+          role: userData.role,
+          isActive: userData.isActive,
+        }),
+      });
 
-    this.cache.set(`${this.userCacheKeyPrefix}${userId}`, user);
-    return user;
+      if (!response.ok) {
+        throw new Error(`Failed to update user: ${response.statusText}`);
+      }
+
+      const updatedUser = await response.json();
+      
+      // Invalidate caches
+      this.cache.delete(this.usersCacheKey);
+      this.cache.delete(`${this.userCacheKeyPrefix}${userId}`);
+      
+      // Cache the updated user
+      this.cache.set(`${this.userCacheKeyPrefix}${userId}`, updatedUser);
+      
+      return updatedUser;
+    } catch (error) {
+      logger.error('Failed to update user via API', { userId, userData, error });
+      throw error;
+    }
   }
 
   async deleteUser(userId: string): Promise<void> {
@@ -128,20 +137,20 @@ export class FirebaseUserRepository implements UserRepository {
     const cachedUsers = this.cache.get<UserData[]>(cacheKey);
     if (cachedUsers) return cachedUsers;
 
-    const querySnapshot = await getDocs(collection(db, this.collectionName));
-    const users = querySnapshot.docs
-      .filter(doc => doc.id !== currentUser?.uid)
-      .map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt || new Date().toISOString(),
-          updatedAt: data.updatedAt || new Date().toISOString(),
-        } as UserData;
-      });
+    try {
+      const response = await fetch(`${this.apiBaseUrl}/fetch-users-data`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch users: ${response.statusText}`);
+      }
+      
+      const allUsers = await response.json();
+      const users = allUsers.filter((user: UserData) => user.id !== currentUser?.uid);
 
-    this.cache.set(cacheKey, users);
-    return users;
+      this.cache.set(cacheKey, users);
+      return users;
+    } catch (error) {
+      logger.error('Failed to fetch users from API', { error });
+      throw error;
+    }
   }
 } 

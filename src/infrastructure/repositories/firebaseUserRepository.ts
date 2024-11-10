@@ -1,63 +1,130 @@
 import { injectable } from 'inversify';
 import { db, auth } from '@/config/firebase';
-import { collection, doc, getDocs, getDoc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
+import { doc, deleteDoc, setDoc } from 'firebase/firestore';
 import { deleteUser } from 'firebase/auth';
 import type { UserRepository } from '@/domain/repositories/userRepository';
 import type { UserData } from '@/types';
 import type { UpdateUserData } from '@/domain/usecases/user/updateUser';
+import { logger } from '@/core/logger';
+
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  total?: number;
+  message: string;
+}
 
 @injectable()
 export class FirebaseUserRepository implements UserRepository {
   private readonly collectionName = 'users';
+  private readonly apiBaseUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}/us-central1/api/v1/users`;
+
+  private async getAuthHeaders(): Promise<HeadersInit> {
+    const token = await auth.currentUser?.getIdToken();
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    };
+  }
 
   async getUsers(): Promise<UserData[]> {
-    const querySnapshot = await getDocs(collection(db, this.collectionName));
-    return querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        createdAt: data.createdAt || new Date().toISOString(),
-        updatedAt: data.updatedAt || new Date().toISOString(),
-      } as UserData;
-    });
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${this.apiBaseUrl}/fetch-users-data`, {
+        headers,
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch users: ${response.statusText}`);
+      }
+
+      const result = await response.json() as ApiResponse<UserData[]>;
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+
+      return result.data;
+    } catch (error) {
+      logger.error('Failed to fetch users from API', { error });
+      throw error;
+    }
   }
 
   async getUserById(userId: string): Promise<UserData> {
-    const userDoc = await getDoc(doc(db, this.collectionName, userId));
-    
-    if (!userDoc.exists()) {
-      throw new Error('User not found');
-    }
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${this.apiBaseUrl}/fetch-users-data`, {
+        headers,
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch users: ${response.statusText}`);
+      }
+      
+      const result = await response.json() as ApiResponse<UserData[]>;
+      if (!result.success) {
+        throw new Error(result.message);
+      }
 
-    const data = userDoc.data();
-    return {
-      id: userId,
-      ...data,
-      createdAt: data.createdAt || new Date().toISOString(),
-      updatedAt: data.updatedAt || new Date().toISOString(),
-    } as UserData;
+      const user = result.data.find((u: UserData) => u.id === userId);
+      if (!user) {
+        throw new Error('User not found');
+      }
+      
+      return user;
+    } catch (error) {
+      logger.error('Failed to get user by ID', { userId, error });
+      throw error;
+    }
+  }
+
+  async getUsersExceptCurrent(): Promise<UserData[]> {
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${this.apiBaseUrl}/fetch-users-data`, {
+        headers,
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch users: ${response.statusText}`);
+      }
+      
+      const result = await response.json() as ApiResponse<UserData[]>;
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+
+      const currentUser = auth.currentUser;
+      return result.data.filter((user: UserData) => user.id !== currentUser?.uid);
+    } catch (error) {
+      logger.error('Failed to fetch users from API', { error });
+      throw error;
+    }
   }
 
   async updateUser(userId: string, userData: UpdateUserData): Promise<UserData> {
-    const userRef = doc(db, this.collectionName, userId);
-    const updatedData = {
-      ...userData,
-      updatedAt: new Date().toISOString()
-    };
-    
-    await updateDoc(userRef, updatedData);
-    
-    const updatedDoc = await getDoc(userRef);
-    const data = updatedDoc.data();
-    
-    return {
-      id: userId,
-      ...data,
-      ...updatedData,
-      createdAt: data?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    } as UserData;
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${this.apiBaseUrl}/update-user-data/${userId}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({
+          displayName: userData.displayName,
+          photoURL: userData.photoURL,
+          role: userData.role,
+          isActive: userData.isActive,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update user: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      logger.error('Failed to update user via API', { userId, userData, error });
+      throw error;
+    }
   }
 
   async deleteUser(userId: string): Promise<void> {
@@ -87,22 +154,5 @@ export class FirebaseUserRepository implements UserRepository {
       id: userId,
       ...newUserData,
     } as UserData;
-  }
-
-  async getUsersExceptCurrent(): Promise<UserData[]> {
-    const currentUser = auth.currentUser;
-    const querySnapshot = await getDocs(collection(db, this.collectionName));
-    
-    return querySnapshot.docs
-      .filter(doc => doc.id !== currentUser?.uid)
-      .map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt || new Date().toISOString(),
-          updatedAt: data.updatedAt || new Date().toISOString(),
-        } as UserData;
-      });
   }
 } 
