@@ -4,16 +4,12 @@ import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import { useDispatch } from 'react-redux';
+import Head from 'next/head';
 import {
   Box,
   Typography,
   Container,
   Card,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
   Button,
   Table,
   TableBody,
@@ -21,113 +17,26 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Avatar,
   IconButton,
-  Switch,
   Tooltip,
   Alert,
-  Snackbar
+  Snackbar,
+  useTheme
 } from '@mui/material';
-import { Edit as EditIcon, Refresh as RefreshIcon } from '@mui/icons-material';
+import { Edit as EditIcon, Refresh as RefreshIcon, Logout as LogoutIcon } from '@mui/icons-material';
 import { userApi } from '@/apis/users';
 import type { RootState } from '@/store';
 import type { User } from '@/types';
 import { handleApiError } from '@/utils/errorHandler';
 import { setUser } from '@/store/slices/authSlice';
+import { EditDialog } from './components/EditDialog';
+import { StatusBadge } from './components/StatusBadge';
 
 interface UserData extends User {
   createdAt: string;
   updatedAt: string;
 }
-
-interface EditDialogProps {
-  open: boolean;
-  user: UserData | null;
-  onClose: () => void;
-  onSave: (userData: Partial<UserData>) => Promise<void>;
-}
-
-const EditDialog = ({ open, user, onClose, onSave }: EditDialogProps) => {
-  const [formData, setFormData] = useState({
-    displayName: '',
-    photoURL: '',
-    role: '',
-    isActive: true
-  });
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (user) {
-      setFormData({
-        displayName: user.displayName || '',
-        photoURL: user.photoURL || '',
-        role: user.role,
-        isActive: user.isActive
-      });
-    }
-  }, [user]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await onSave(formData);
-      onClose();
-    } catch (error) {
-      console.error('Failed to update user:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Edit User</DialogTitle>
-      <form onSubmit={handleSubmit}>
-        <DialogContent>
-          <Box display="flex" flexDirection="column" gap={3}>
-            <TextField
-              fullWidth
-              label="Display Name"
-              value={formData.displayName}
-              onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-            />
-            <TextField
-              fullWidth
-              label="Photo URL"
-              value={formData.photoURL}
-              onChange={(e) => setFormData({ ...formData, photoURL: e.target.value })}
-            />
-            <TextField
-              fullWidth
-              label="Role"
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-            />
-            <Box display="flex" alignItems="center" gap={2}>
-              <Typography>Active Status</Typography>
-              <Switch
-                checked={formData.isActive}
-                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-              />
-            </Box>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={loading}
-          >
-            {loading ? 'Saving...' : 'Save Changes'}
-          </Button>
-        </DialogActions>
-      </form>
-    </Dialog>
-  );
-};
 
 interface SnackbarState {
   open: boolean;
@@ -148,6 +57,8 @@ export default function DashboardPage() {
   });
   const router = useRouter();
   const dispatch = useDispatch();
+
+  const theme = useTheme();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -257,105 +168,197 @@ export default function DashboardPage() {
   }, [currentUser?.token]);
 
   return (
-    <Container maxWidth="lg">
-      <Box py={4}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-          <Typography variant="h4">Users Management</Typography>
-          <Box display="flex" gap={2}>
-            <Button
-              variant="contained"
-              startIcon={<RefreshIcon />}
-              onClick={fetchUsers}
-              disabled={loading}
+    <>
+      <Head>
+        <title>Dashboard</title>
+      </Head>
+      <Box
+        sx={{
+          minHeight: '100vh',
+          background: 'linear-gradient(145deg, #f6f8fc 0%, #f0f4f8 100%)',
+        }}
+      >
+        <Container maxWidth="lg">
+          <Box py={4}>
+            {/* Header Section */}
+            <Card
+              elevation={0}
+              sx={{
+                mb: 4,
+                p: 3,
+                borderRadius: 3,
+                background: 'linear-gradient(135deg, #fff 0%, #f8faff 100%)',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+              }}
             >
-              Refresh
-            </Button>
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={handleLogout}
-            >
-              Logout
-            </Button>
-          </Box>
-        </Box>
+              <Box display="flex" justifyContent="space-between" alignItems="center">
+                <Typography 
+                  variant="h4"
+                  sx={{
+                    fontWeight: 700,
+                    background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  Users Management
+                </Typography>
+                <Box display="flex" gap={2}>
+                  <Button
+                    variant="contained"
+                    startIcon={<RefreshIcon />}
+                    onClick={fetchUsers}
+                    disabled={loading}
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      boxShadow: 'none',
+                      '&:hover': {
+                        boxShadow: '0 4px 12px rgba(33,150,243,0.2)',
+                      },
+                    }}
+                  >
+                    Refresh
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    startIcon={<LogoutIcon />}
+                    onClick={handleLogout}
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: 'none',
+                    }}
+                  >
+                    Logout
+                  </Button>
+                </Box>
+              </Box>
+            </Card>
 
-        <Card>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>User</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Role</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id} hover>
-                    <TableCell>
-                      <Box display="flex" alignItems="center" gap={2}>
-                        <Avatar src={user.photoURL || undefined} alt={user.displayName || ''} />
-                        <Typography>{user.displayName}</Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.role}</TableCell>
-                    <TableCell>
-                      <Box
-                        component="span"
+            {/* Users Table */}
+            <Card
+              elevation={0}
+              sx={{
+                borderRadius: 3,
+                overflow: 'hidden',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+              }}
+            >
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 600 }}>User</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Role</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {users.map((user) => (
+                      <TableRow 
+                        key={user.id} 
+                        hover
                         sx={{
-                          px: 2,
-                          py: 0.5,
-                          borderRadius: 1,
-                          bgcolor: user.isActive ? 'success.light' : 'error.light',
-                          color: user.isActive ? 'success.dark' : 'error.dark',
+                          '&:hover': {
+                            backgroundColor: 'rgba(0,0,0,0.01)',
+                          },
                         }}
                       >
-                        {user.isActive ? 'Active' : 'Inactive'}
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Tooltip title="Edit User">
-                        <IconButton
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setOpenDialog(true);
-                          }}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Card>
+                        <TableCell>
+                          <Box display="flex" alignItems="center" gap={2}>
+                            <Avatar 
+                              src={user.photoURL || undefined} 
+                              alt={user.displayName || ''}
+                              sx={{ 
+                                width: 40, 
+                                height: 40,
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                              }}
+                            />
+                            <Typography sx={{ fontWeight: 500 }}>
+                              {user.displayName}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          <Typography
+                            sx={{
+                              px: 2,
+                              py: 0.5,
+                              borderRadius: 2,
+                              display: 'inline-block',
+                              bgcolor: 'primary.soft',
+                              color: 'primary.main',
+                              fontSize: '0.875rem',
+                              fontWeight: 500,
+                            }}
+                          >
+                            {user.role}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge isActive={user.isActive} />
+                        </TableCell>
+                        <TableCell>
+                          <Tooltip title="Edit User">
+                            <IconButton
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setOpenDialog(true);
+                              }}
+                              sx={{
+                                color: 'primary.main',
+                                '&:hover': {
+                                  backgroundColor: 'primary.soft',
+                                },
+                              }}
+                            >
+                              <EditIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Card>
 
-        <EditDialog
-          open={openDialog}
-          user={selectedUser}
-          onClose={() => {
-            setOpenDialog(false);
-            setSelectedUser(null);
-          }}
-          onSave={handleUpdateUser}
-        />
+            <EditDialog
+              open={openDialog}
+              user={selectedUser}
+              onClose={() => {
+                setOpenDialog(false);
+                setSelectedUser(null);
+              }}
+              onSave={handleUpdateUser}
+            />
 
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={6000}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-        >
-          <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })}>
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
+            <Snackbar
+              open={snackbar.open}
+              autoHideDuration={6000}
+              onClose={() => setSnackbar({ ...snackbar, open: false })}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+              <Alert 
+                severity={snackbar.severity} 
+                onClose={() => setSnackbar({ ...snackbar, open: false })}
+                sx={{ 
+                  borderRadius: 2,
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                }}
+              >
+                {snackbar.message}
+              </Alert>
+            </Snackbar>
+          </Box>
+        </Container>
       </Box>
-    </Container>
+    </>
   );
 } 

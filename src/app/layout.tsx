@@ -16,6 +16,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <title>Login</title>
+        <meta name="description" content="Login to your account" />
+      </head>
       <body className={inter.className} suppressHydrationWarning>
         <Provider store={store}>
           <ThemeProvider theme={theme}>
