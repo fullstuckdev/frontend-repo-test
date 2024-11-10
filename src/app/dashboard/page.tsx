@@ -30,6 +30,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import type { UserData, SnackbarState, UIUser } from '@/ui/components/dashboard/types';
 import { GetUsersUseCase } from '@/domain/usecases/user/getUsers';
+import { logger } from '@/core/logger';
 
 export default function DashboardPage() {
   const viewModel = container.get<DashboardViewModel>(TYPES.DashboardViewModel);
@@ -157,6 +158,7 @@ export default function DashboardPage() {
 
   const handleCurrentUserUpdate = async (userData: Partial<UserData>) => {
     if (!currentUser?.id) {
+      logger.error('User ID missing during profile update', { userData });
       setSnackbar({
         open: true,
         message: 'User ID is missing',
@@ -181,6 +183,7 @@ export default function DashboardPage() {
         }));
       }
     } catch (error) {
+      logger.error('Failed to update user profile', { userId: currentUser.id, userData, error });
       setSnackbar({
         open: true,
         message: 'Failed to update profile',
@@ -202,6 +205,7 @@ export default function DashboardPage() {
       });
       await fetchUsers();
     } catch (error) {
+      logger.error('Failed to delete user', { userId: user.id, error });
       setSnackbar({
         open: true,
         message: 'Failed to delete user',
