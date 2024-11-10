@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://127.0.0.1:5001/test-fullstack-1c6a8/us-central1/api/v1'
+const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/${process.env.NEXT_PUBLIC_FB_PROJECT_ID}/us-central1/api/v1`
 
 export const userApi = {
   fetchUsersData: async (token: string) => {
