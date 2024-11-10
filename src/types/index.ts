@@ -1,11 +1,13 @@
 export interface User {
   id: string;
   email: string;
-  displayName: string | null;
-  photoURL: string | null;
+  displayName: string;
+  photoURL: string;
+  token: string;
   role: string;
   isActive: boolean;
-  token?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AuthState {

@@ -124,7 +124,6 @@ export default function DashboardPage() {
     }
 
     try {
-      // Validate required fields
       if (!userData.displayName || !userData.role) {
         throw new Error('Display name and role are required');
       }
@@ -175,10 +174,27 @@ export default function DashboardPage() {
       <Box
         sx={{
           minHeight: '100vh',
-          background: 'linear-gradient(145deg, #f6f8fc 0%, #f0f4f8 100%)',
+          background: 'linear-gradient(135deg, #2196F3 0%, #4CAF50 100%)',
+          position: 'relative',
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            width: '140%',
+            height: '140%',
+            background: 'radial-gradient(circle, rgba(255,255,255,0.2) 2px, transparent 3px)',
+            backgroundSize: '50px 50px',
+            animation: 'rotate 60s linear infinite',
+            opacity: 0.5,
+            zIndex: 0,
+          },
+          '@keyframes rotate': {
+            '0%': { transform: 'rotate(0deg)' },
+            '100%': { transform: 'rotate(360deg)' },
+          },
         }}
       >
-        <Container maxWidth="lg">
+        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
           <Box py={4}>
             {/* Header Section */}
             <Card
@@ -187,19 +203,23 @@ export default function DashboardPage() {
                 mb: 4,
                 p: 3,
                 borderRadius: 3,
-                background: 'linear-gradient(135deg, #fff 0%, #f8faff 100%)',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+                backdropFilter: 'blur(10px)',
+                backgroundColor: 'rgba(255, 255, 255, 0.85)',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                position: 'relative',
               }}
             >
               <Box display="flex" justifyContent="space-between" alignItems="center">
                 <Typography 
                   variant="h4"
                   sx={{
-                    fontWeight: 700,
-                    background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                    fontWeight: 800,
+                    background: 'linear-gradient(45deg, #1976D2 30%, #388E3C 90%)',
                     backgroundClip: 'text',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
+                    letterSpacing: '-0.5px',
                   }}
                 >
                   Users Management
@@ -211,11 +231,21 @@ export default function DashboardPage() {
                     onClick={fetchUsers}
                     disabled={loading}
                     sx={{
-                      borderRadius: 2,
+                      borderRadius: '12px',
                       textTransform: 'none',
-                      boxShadow: 'none',
+                      backdropFilter: 'blur(10px)',
+                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                      color: '#1976D2',
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                      transition: 'all 0.3s ease',
                       '&:hover': {
-                        boxShadow: '0 4px 12px rgba(33,150,243,0.2)',
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15)',
+                      },
+                      '&:active': {
+                        transform: 'translateY(-1px)',
                       },
                     }}
                   >
@@ -223,12 +253,25 @@ export default function DashboardPage() {
                   </Button>
                   <Button
                     variant="outlined"
-                    color="error"
                     startIcon={<LogoutIcon />}
                     onClick={handleLogout}
                     sx={{
-                      borderRadius: 2,
+                      borderRadius: '12px',
                       textTransform: 'none',
+                      backdropFilter: 'blur(10px)',
+                      backgroundColor: 'rgba(211, 47, 47, 0.1)',
+                      color: '#D32F2F',
+                      border: '1px solid rgba(211, 47, 47, 0.5)',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        backgroundColor: 'rgba(211, 47, 47, 0.15)',
+                        border: '1px solid #D32F2F',
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 4px 12px rgba(211, 47, 47, 0.15)',
+                      },
+                      '&:active': {
+                        transform: 'translateY(-1px)',
+                      },
                     }}
                   >
                     Logout
@@ -243,18 +286,25 @@ export default function DashboardPage() {
               sx={{
                 borderRadius: 3,
                 overflow: 'hidden',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+                backdropFilter: 'blur(10px)',
+                backgroundColor: 'rgba(255, 255, 255, 0.85)',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
               }}
             >
               <TableContainer>
                 <Table>
                   <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 600 }}>User</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Role</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
+                    <TableRow
+                      sx={{
+                        backgroundColor: 'rgba(25, 118, 210, 0.05)',
+                      }}
+                    >
+                      <TableCell sx={{ fontWeight: 600, color: '#1976D2' }}>User</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: '#1976D2' }}>Email</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: '#1976D2' }}>Role</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: '#1976D2' }}>Status</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: '#1976D2' }}>Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -264,7 +314,7 @@ export default function DashboardPage() {
                         hover
                         sx={{
                           '&:hover': {
-                            backgroundColor: 'rgba(0,0,0,0.01)',
+                            backgroundColor: 'rgba(25, 118, 210, 0.05)',
                           },
                         }}
                       >
@@ -276,7 +326,7 @@ export default function DashboardPage() {
                               sx={{ 
                                 width: 40, 
                                 height: 40,
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                               }}
                             />
                             <Typography sx={{ fontWeight: 500 }}>
@@ -290,10 +340,10 @@ export default function DashboardPage() {
                             sx={{
                               px: 2,
                               py: 0.5,
-                              borderRadius: 2,
+                              borderRadius: '16px',
                               display: 'inline-block',
-                              bgcolor: 'primary.soft',
-                              color: 'primary.main',
+                              background: 'linear-gradient(45deg, #2196F3 30%, #4CAF50 90%)',
+                              color: 'white',
                               fontSize: '0.875rem',
                               fontWeight: 500,
                             }}
@@ -312,9 +362,9 @@ export default function DashboardPage() {
                                 setOpenDialog(true);
                               }}
                               sx={{
-                                color: 'primary.main',
+                                color: '#2196F3',
                                 '&:hover': {
-                                  backgroundColor: 'primary.soft',
+                                  backgroundColor: 'rgba(33,150,243,0.1)',
                                 },
                               }}
                             >
@@ -349,8 +399,10 @@ export default function DashboardPage() {
                 severity={snackbar.severity} 
                 onClose={() => setSnackbar({ ...snackbar, open: false })}
                 sx={{ 
-                  borderRadius: 2,
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                  borderRadius: '16px',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                  backdropFilter: 'blur(20px)',
+                  background: 'rgba(255,255,255,0.9)',
                 }}
               >
                 {snackbar.message}
@@ -359,6 +411,12 @@ export default function DashboardPage() {
           </Box>
         </Container>
       </Box>
+      <style jsx global>{`
+        @keyframes rotate {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </>
   );
 } 
