@@ -158,10 +158,10 @@ export default function DashboardPage() {
   };
 
   const handleUpdateUser = async (userData: Partial<UserData>) => {
-    if (!currentUser?.token || !selectedUser) {
+    if (!currentUser?.token) {
       setSnackbar({
         open: true,
-        message: 'Authentication token or user selection is missing',
+        message: 'Authentication token is missing',
         severity: 'error' as const
       });
       return;
@@ -179,14 +179,24 @@ export default function DashboardPage() {
         isActive: userData.isActive ?? true
       };
 
+      const userIdToUpdate = selectedUser?.id || currentUser.id;
+
       const response = await userApi.updateUserData(
-        selectedUser.id,
+        userIdToUpdate,
         updatedUserData,
         currentUser.token
       );
 
       if (response.success) {
         await fetchUsers();
+        
+        if (userIdToUpdate === currentUser.id) {
+          dispatch(setUser({
+            ...currentUser,
+            ...updatedUserData,
+          }));
+        }
+
         setSnackbar({
           open: true,
           message: 'User updated successfully',
