@@ -1,9 +1,10 @@
-import type { User } from '@/types';
+import type { UserData } from '@/types';
+import type { UpdateUserData } from '@/domain/usecases/user/updateUser';
 
 export interface UserRepository {
-  getUserById(id: string): Promise<User>;
-  createUser(id: string, userData: Partial<User>): Promise<User>;
-  updateUser(id: string, userData: Partial<User>): Promise<User>;
-  deleteUser(id: string): Promise<void>;
-  getAllUsers(): Promise<User[]>;
+  getUsers(): Promise<UserData[]>;
+  getUserById(userId: string): Promise<UserData>;
+  updateUser(userId: string, userData: UpdateUserData): Promise<UserData>;
+  deleteUser(userId: string): Promise<void>;
+  createUser(userId: string, userData: Partial<UserData>): Promise<UserData>;
 }

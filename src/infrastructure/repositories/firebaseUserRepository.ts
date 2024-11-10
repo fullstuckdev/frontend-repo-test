@@ -23,6 +23,22 @@ export class FirebaseUserRepository implements UserRepository {
     });
   }
 
+  async getUserById(userId: string): Promise<UserData> {
+    const userDoc = await getDoc(doc(db, this.collectionName, userId));
+    
+    if (!userDoc.exists()) {
+      throw new Error('User not found');
+    }
+
+    const data = userDoc.data();
+    return {
+      id: userId,
+      ...data,
+      createdAt: data.createdAt || new Date().toISOString(),
+      updatedAt: data.updatedAt || new Date().toISOString(),
+    } as UserData;
+  }
+
   async updateUser(userId: string, userData: UpdateUserData): Promise<UserData> {
     const userRef = doc(db, this.collectionName, userId);
     const updatedData = {
@@ -70,22 +86,6 @@ export class FirebaseUserRepository implements UserRepository {
     return {
       id: userId,
       ...newUserData,
-    } as UserData;
-  }
-
-  async getUserById(userId: string): Promise<UserData> {
-    const userDoc = await getDoc(doc(db, this.collectionName, userId));
-    
-    if (!userDoc.exists()) {
-      throw new Error('User not found');
-    }
-
-    const data = userDoc.data();
-    return {
-      id: userId,
-      ...data,
-      createdAt: data.createdAt || new Date().toISOString(),
-      updatedAt: data.updatedAt || new Date().toISOString(),
     } as UserData;
   }
 } 

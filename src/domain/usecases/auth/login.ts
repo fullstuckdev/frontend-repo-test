@@ -31,13 +31,7 @@ export class LoginUseCase {
     
     return {
       ...userData,
-      id: userCredential.user.uid,
       token,
-      isActive: userData.isActive ?? true,
-      role: userData.role || 'user',
-      displayName: userData.displayName || '',
-      photoURL: userData.photoURL || '',
-      email: userData.email || '',
     };
   }
 }

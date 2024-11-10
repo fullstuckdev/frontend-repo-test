@@ -4,6 +4,13 @@ import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import { useDispatch } from 'react-redux';
+import { container } from '@/ioc/container';
+import { TYPES } from '@/ioc/types';
+import type { DashboardViewModel } from '@/ui/viewmodels/DashboardViewModel';
+import type { RootState } from '@/store';
+import type { User } from '@/types';
+import { setUser } from '@/store/slices/authSlice';
+import { ClientOnly } from '@/ui/components/common/ClientOnly/ClientOnly';
 import Head from 'next/head';
 import {
   Box,
@@ -29,11 +36,7 @@ import {
   DialogActions
 } from '@mui/material';
 import { Edit as EditIcon, Refresh as RefreshIcon, Logout as LogoutIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import { userApi } from '@/apis/users';
-import type { RootState } from '@/store';
-import type { User } from '@/types';
 import { handleApiError } from '@/utils/errorHandler';
-import { setUser } from '@/store/slices/authSlice';
 import { EditDialog } from './components/EditDialog';
 import { StatusBadge } from './components/StatusBadge';
 import {  deleteUser } from 'firebase/auth';
@@ -53,6 +56,7 @@ interface SnackbarState {
 }
 
 export default function DashboardPage() {
+  const viewModel = container.get<DashboardViewModel>(TYPES.DashboardViewModel);
   const { user: currentUser } = useSelector((state: RootState) => state.auth);
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -135,106 +139,67 @@ export default function DashboardPage() {
   };
 
   const fetchUsers = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/');
-      return;
-    }
-    
     setLoading(true);
     try {
-      const response = await userApi.fetchUsersData(token);
-      setUsers(response.data);
+      const users = await viewModel.getUsers();
+      setUsers(users);
     } catch (error) {
-      const errorMessage = handleApiError(error);
       setSnackbar({
         open: true,
-        message: `Failed to fetch users: ${errorMessage}`,
-        severity: 'error' as const
+        message: 'Failed to fetch users',
+        severity: 'error'
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleUpdateUser = async (userData: Partial<UserData>) => {
-    if (!currentUser?.token) {
+  const handleUpdateUser = async (userData: Partial<User>) => {
+    if (!currentUser?.id) {
       setSnackbar({
         open: true,
-        message: 'Authentication token is missing',
-        severity: 'error' as const
+        message: 'User ID is missing',
+        severity: 'error'
       });
       return;
     }
 
     try {
-      if (!userData.displayName || !userData.role) {
-        throw new Error('Display name and role are required');
+      const updatedUser = await viewModel.updateUser(currentUser.id, userData);
+      
+      if (updatedUser.id === currentUser.id) {
+        dispatch(setUser(updatedUser));
       }
-
-      const updatedUserData = {
-        displayName: userData.displayName,
-        photoURL: userData.photoURL || '',
-        role: userData.role,
-        isActive: userData.isActive ?? true
-      };
-
-      const userIdToUpdate = selectedUser?.id || currentUser.id;
-
-      const response = await userApi.updateUserData(
-        userIdToUpdate,
-        updatedUserData,
-        currentUser.token
-      );
-
-      if (response.success) {
-        await fetchUsers();
-        
-        if (userIdToUpdate === currentUser.id) {
-          dispatch(setUser({
-            ...currentUser,
-            ...updatedUserData,
-          }));
-        }
-
-        setSnackbar({
-          open: true,
-          message: 'User updated successfully',
-          severity: 'success' as const
-        });
-        setOpenDialog(false);
-      } else {
-        throw new Error('Failed to update user data');
-      }
-    } catch (error) {
-      const errorMessage = handleApiError(error);
+      
+      await fetchUsers();
+      
       setSnackbar({
         open: true,
-        message: `Failed to update user: ${errorMessage}`,
-        severity: 'error' as const
+        message: 'User updated successfully',
+        severity: 'success'
+      });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: error instanceof Error ? error.message : 'Failed to update user',
+        severity: 'error'
       });
     }
   };
 
-  const handleDeleteUser = async (user: UserData) => {
+  const handleDeleteUser = async (user: User) => {
     setLoading(true);
     try {
-      await deleteDoc(doc(db, 'users', user.id));
-
-      const currentAuthUser = auth.currentUser;
-      if (currentAuthUser && currentAuthUser.uid === user.id) {
-        await deleteUser(currentAuthUser);
-      }
-
+      await viewModel.deleteUser(user.id);
+      
       setSnackbar({
         open: true,
         message: 'User deleted successfully',
         severity: 'success'
       });
-
+      
       await fetchUsers();
     } catch (error) {
-      console.error('Delete error:', error);
       setSnackbar({
         open: true,
         message: 'Failed to delete user',
