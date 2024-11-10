@@ -1,9 +1,6 @@
-import dynamic from 'next/dynamic';
+'use client';
 
-const LoginPage = dynamic(
-  () => import('@/ui/components/auth/LoginPage/LoginPage').then(mod => mod.LoginPage),
-  { ssr: false }
-);
+import { LoginPage } from '@/ui/components/auth/LoginPage/LoginPage';
 
 export default function Page() {
   return <LoginPage />;
