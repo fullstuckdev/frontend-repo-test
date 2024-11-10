@@ -13,8 +13,8 @@ import {
   useMediaQuery
 } from '@mui/material';
 import { RegisterForm } from '../RegisterForm/RegisterForm';
-import { setUser, setLoading, setError } from '@/store/slices/authSlice';
-import type { RootState } from '@/store';
+import { setUser, setLoading, setError } from '@/dataStore/auth/slice';
+import type { RootState } from '@/dataStore/store';
 import { container } from '@/ioc/container';
 import { TYPES } from '@/ioc/types';
 import type { RegisterUseCase, RegisterCredentials } from '@/domain/usecases/auth/register';

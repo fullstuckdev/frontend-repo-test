@@ -7,9 +7,9 @@ import { useDispatch } from 'react-redux';
 import { container } from '@/ioc/container';
 import { TYPES } from '@/ioc/types';
 import type { DashboardViewModel } from '@/ui/viewmodels/DashboardViewModel';
-import type { RootState } from '@/store';
-import type { User } from '@/types';
-import { setUser } from '@/store/slices/authSlice';
+import type { RootState } from '@/dataStore/store';
+import type { User } from '@/domain/models/user';
+import { setUser } from '@/dataStore/auth/slice';
 import Head from 'next/head';
 import {
   Box,
@@ -28,7 +28,7 @@ import {
 import { auth } from '@/config/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
-import type { UserData, SnackbarState } from '@/ui/components/dashboard/types';
+import type { UserData, SnackbarState, UIUser } from '@/ui/components/dashboard/types';
 
 export default function DashboardPage() {
   const viewModel = container.get<DashboardViewModel>(TYPES.DashboardViewModel);
@@ -128,7 +128,39 @@ export default function DashboardPage() {
     }
   };
 
-  const handleUpdateUser = async (userData: Partial<User>) => {
+  const handleUpdateUser = async (userData: Partial<UserData>) => {
+    if (!selectedUser?.id) {
+      setSnackbar({
+        open: true,
+        message: 'User ID is missing',
+        severity: 'error'
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await viewModel.updateUser(selectedUser.id, userData);
+      setSnackbar({
+        open: true,
+        message: 'User updated successfully',
+        severity: 'success'
+      });
+      await fetchUsers();
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: 'Failed to update user',
+        severity: 'error'
+      });
+    } finally {
+      setLoading(false);
+      setOpenDialog(false);
+      setSelectedUser(null);
+    }
+  };
+
+  const handleCurrentUserUpdate = async (userData: Partial<UserData>) => {
     if (!currentUser?.id) {
       setSnackbar({
         open: true,
@@ -138,40 +170,41 @@ export default function DashboardPage() {
       return;
     }
 
+    setLoading(true);
     try {
-      const updatedUser = await viewModel.updateUser(currentUser.id, userData);
-      
-      if (updatedUser.id === currentUser.id) {
-        dispatch(setUser(updatedUser));
-      }
-      
-      await fetchUsers();
-      
+      await viewModel.updateUser(currentUser.id, userData);
       setSnackbar({
         open: true,
-        message: 'User updated successfully',
+        message: 'Profile updated successfully',
         severity: 'success'
       });
+      
+      if (currentUser) {
+        dispatch(setUser({
+          ...currentUser,
+          ...userData
+        }));
+      }
     } catch (error) {
       setSnackbar({
         open: true,
-        message: error instanceof Error ? error.message : 'Failed to update user',
+        message: 'Failed to update profile',
         severity: 'error'
       });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDeleteUser = async (user: User) => {
+  const handleDeleteUser = async (user: UserData) => {
     setLoading(true);
     try {
       await viewModel.deleteUser(user.id);
-      
       setSnackbar({
         open: true,
         message: 'User deleted successfully',
         severity: 'success'
       });
-      
       await fetchUsers();
     } catch (error) {
       setSnackbar({
@@ -227,8 +260,8 @@ export default function DashboardPage() {
             {/* Profile Card Section */}
             {currentUser && (
               <ProfileCard
-                user={currentUser}
-                onUpdateUser={handleUpdateUser}
+                user={currentUser as UIUser}
+                onUpdateUser={handleCurrentUserUpdate}
               />
             )}
 

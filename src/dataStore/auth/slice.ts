@@ -1,8 +1,8 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { User } from '@/domain/models/user';
+import type { UIUser } from '@/ui/components/dashboard/types';
 
 export interface AuthState {
-  user: User | null;
+  user: UIUser | null;
   loading: boolean;
   error: string | null;
 }
@@ -17,7 +17,7 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    setUser: (state, action: PayloadAction<User | null>) => {
+    setUser: (state, action: PayloadAction<UIUser | null>) => {
       state.user = action.payload;
       state.loading = false;
       state.error = null;

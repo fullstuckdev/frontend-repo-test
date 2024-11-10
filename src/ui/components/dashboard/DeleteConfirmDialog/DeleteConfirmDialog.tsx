@@ -6,15 +6,7 @@ import {
   Button,
   Typography,
 } from '@mui/material';
-import type { UserData } from '../types';
-
-interface DeleteConfirmDialogProps {
-  open: boolean;
-  user: UserData | null;
-  loading: boolean;
-  onClose: () => void;
-  onConfirm: (user: UserData) => void;
-}
+import type { DeleteConfirmDialogProps } from '../types';
 
 export const DeleteConfirmDialog = ({
   open,
@@ -23,6 +15,12 @@ export const DeleteConfirmDialog = ({
   onClose,
   onConfirm,
 }: DeleteConfirmDialogProps) => {
+  const handleConfirm = async () => {
+    if (user) {
+      await onConfirm(user);
+    }
+  };
+
   return (
     <Dialog
       open={open}
@@ -60,7 +58,7 @@ export const DeleteConfirmDialog = ({
           Cancel
         </Button>
         <Button
-          onClick={() => user && onConfirm(user)}
+          onClick={handleConfirm}
           disabled={loading}
           sx={{
             borderRadius: '12px',
