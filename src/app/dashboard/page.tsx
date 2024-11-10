@@ -22,9 +22,13 @@ import {
   Tooltip,
   Alert,
   Snackbar,
-  useTheme
+  useTheme,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
-import { Edit as EditIcon, Refresh as RefreshIcon, Logout as LogoutIcon } from '@mui/icons-material';
+import { Edit as EditIcon, Refresh as RefreshIcon, Logout as LogoutIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { userApi } from '@/apis/users';
 import type { RootState } from '@/store';
 import type { User } from '@/types';
@@ -32,6 +36,9 @@ import { handleApiError } from '@/utils/errorHandler';
 import { setUser } from '@/store/slices/authSlice';
 import { EditDialog } from './components/EditDialog';
 import { StatusBadge } from './components/StatusBadge';
+import {  deleteUser } from 'firebase/auth';
+import { doc, deleteDoc } from 'firebase/firestore';
+import { db, auth } from '@/config/firebase';
 
 interface UserData extends User {
   createdAt: string;
@@ -59,6 +66,9 @@ export default function DashboardPage() {
   const dispatch = useDispatch();
 
   const theme = useTheme();
+
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserData | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -159,6 +169,37 @@ export default function DashboardPage() {
         message: `Failed to update user: ${errorMessage}`,
         severity: 'error' as const
       });
+    }
+  };
+
+  const handleDeleteUser = async (user: UserData) => {
+    setLoading(true);
+    try {
+      await deleteDoc(doc(db, 'users', user.id));
+
+      const currentAuthUser = auth.currentUser;
+      if (currentAuthUser && currentAuthUser.uid === user.id) {
+        await deleteUser(currentAuthUser);
+      }
+
+      setSnackbar({
+        open: true,
+        message: 'User deleted successfully',
+        severity: 'success'
+      });
+
+      await fetchUsers();
+    } catch (error) {
+      console.error('Delete error:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to delete user',
+        severity: 'error'
+      });
+    } finally {
+      setLoading(false);
+      setDeleteConfirmOpen(false);
+      setUserToDelete(null);
     }
   };
 
@@ -355,22 +396,40 @@ export default function DashboardPage() {
                           <StatusBadge isActive={user.isActive} />
                         </TableCell>
                         <TableCell>
-                          <Tooltip title="Edit User">
-                            <IconButton
-                              onClick={() => {
-                                setSelectedUser(user);
-                                setOpenDialog(true);
-                              }}
-                              sx={{
-                                color: '#2196F3',
-                                '&:hover': {
-                                  backgroundColor: 'rgba(33,150,243,0.1)',
-                                },
-                              }}
-                            >
-                              <EditIcon />
-                            </IconButton>
-                          </Tooltip>
+                          <Box display="flex" gap={1}>
+                            <Tooltip title="Edit User">
+                              <IconButton
+                                onClick={() => {
+                                  setSelectedUser(user);
+                                  setOpenDialog(true);
+                                }}
+                                sx={{
+                                  color: '#2196F3',
+                                  '&:hover': {
+                                    backgroundColor: 'rgba(33,150,243,0.1)',
+                                  },
+                                }}
+                              >
+                                <EditIcon />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete User">
+                              <IconButton
+                                onClick={() => {
+                                  setUserToDelete(user);
+                                  setDeleteConfirmOpen(true);
+                                }}
+                                sx={{
+                                  color: '#D32F2F',
+                                  '&:hover': {
+                                    backgroundColor: 'rgba(211,47,47,0.1)',
+                                  },
+                                }}
+                              >
+                                <DeleteIcon />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -408,6 +467,68 @@ export default function DashboardPage() {
                 {snackbar.message}
               </Alert>
             </Snackbar>
+
+            <Dialog
+              open={deleteConfirmOpen}
+              onClose={() => {
+                setDeleteConfirmOpen(false);
+                setUserToDelete(null);
+              }}
+              PaperProps={{
+                sx: {
+                  borderRadius: '16px',
+                  backdropFilter: 'blur(10px)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                },
+              }}
+            >
+              <DialogTitle sx={{ 
+                pb: 1,
+                fontWeight: 600,
+              }}>
+                Confirm Delete
+              </DialogTitle>
+              <DialogContent>
+                <Typography>
+                  Are you sure you want to delete user "{userToDelete?.displayName}"? This action cannot be undone.
+                </Typography>
+              </DialogContent>
+              <DialogActions sx={{ p: 2.5, pt: 1.5 }}>
+                <Button
+                  onClick={() => {
+                    setDeleteConfirmOpen(false);
+                    setUserToDelete(null);
+                  }}
+                  sx={{
+                    borderRadius: '12px',
+                    textTransform: 'none',
+                    color: '#1976D2',
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => userToDelete && handleDeleteUser(userToDelete)}
+                  disabled={loading}
+                  sx={{
+                    borderRadius: '12px',
+                    textTransform: 'none',
+                    backdropFilter: 'blur(10px)',
+                    backgroundColor: 'rgba(211, 47, 47, 0.1)',
+                    color: '#D32F2F',
+                    border: '1px solid rgba(211, 47, 47, 0.5)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(211, 47, 47, 0.15)',
+                      border: '1px solid #D32F2F',
+                    },
+                  }}
+                >
+                  {loading ? 'Deleting...' : 'Delete'}
+                </Button>
+              </DialogActions>
+            </Dialog>
           </Box>
         </Container>
       </Box>
