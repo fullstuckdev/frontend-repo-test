@@ -4,7 +4,7 @@ import {
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   updateProfile as firebaseUpdateProfile,
-  type User as FirebaseUser,
+  type User,
   type UserCredential
 } from 'firebase/auth';
 import { auth } from '@/config/firebase';
@@ -26,7 +26,7 @@ export class FirebaseAuthService implements AuthService {
     return firebaseSignOut(auth);
   }
 
-  async getCurrentUser(): Promise<FirebaseUser | null> {
+  async getCurrentUser(): Promise<User | null> {
     return new Promise((resolve) => {
       const unsubscribe = auth.onAuthStateChanged((user) => {
         unsubscribe();
@@ -42,7 +42,7 @@ export class FirebaseAuthService implements AuthService {
   }
 
   async updateProfile(displayName: string, photoURL?: string): Promise<void> {
-    const user = auth.currentUser;
+    const user = await this.getCurrentUser();
     if (!user) throw new Error('No user is signed in');
     await firebaseUpdateProfile(user, { displayName, photoURL });
   }

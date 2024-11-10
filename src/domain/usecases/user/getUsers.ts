@@ -10,6 +10,6 @@ export class GetUsersUseCase {
   ) {}
 
   async execute(): Promise<UserData[]> {
-    return await this.userRepository.getUsers();
+    return this.userRepository.getUsersExceptCurrent();
   }
 } 

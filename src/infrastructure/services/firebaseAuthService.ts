@@ -1,41 +1,49 @@
 import { injectable } from 'inversify';
-import { auth } from '@/config/firebase';
 import { 
-  signInWithEmailAndPassword,
+  getAuth, 
+  signInWithEmailAndPassword as firebaseSignIn,
   createUserWithEmailAndPassword,
-  updateProfile,
-  type UserCredential 
+  updateProfile as firebaseUpdateProfile,
+  signOut as firebaseSignOut,
+  type User,
+  type UserCredential
 } from 'firebase/auth';
+import { auth } from '@/config/firebase';
 import type { AuthService } from '@/domain/services/authService';
 
 @injectable()
 export class FirebaseAuthService implements AuthService {
   async signInWithEmailAndPassword(email: string, password: string): Promise<UserCredential> {
-    return await signInWithEmailAndPassword(auth, email, password);
+    return firebaseSignIn(auth, email, password);
   }
 
-  async signUpWithEmailAndPassword(
-    email: string, 
-    password: string, 
-    displayName: string
-  ): Promise<UserCredential> {
+  async signUpWithEmailAndPassword(email: string, password: string, displayName: string): Promise<UserCredential> {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    
-    if (userCredential.user) {
-      await updateProfile(userCredential.user, {
-        displayName,
-        photoURL: `https://api.dicebear.com/7.x/avatars/svg?seed=${email}`,
-      });
-    }
-
+    await this.updateProfile(displayName);
     return userCredential;
   }
 
   async signOut(): Promise<void> {
-    await auth.signOut();
+    return firebaseSignOut(auth);
   }
 
-  getCurrentUser() {
+  async getCurrentUser(): Promise<User | null> {
     return auth.currentUser;
+  }
+
+  async getIdToken(): Promise<string | null> {
+    const user = await this.getCurrentUser();
+    if (!user) return null;
+    return user.getIdToken();
+  }
+
+  async updateProfile(displayName: string, photoURL?: string): Promise<void> {
+    const user = await this.getCurrentUser();
+    if (!user) throw new Error('No user is signed in');
+    
+    await firebaseUpdateProfile(user, { 
+      displayName, 
+      photoURL: photoURL ?? `https://api.dicebear.com/7.x/avatars/svg?seed=${user.email}` 
+    });
   }
 } 

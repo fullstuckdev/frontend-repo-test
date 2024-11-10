@@ -29,6 +29,7 @@ import { auth } from '@/config/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import type { UserData, SnackbarState, UIUser } from '@/ui/components/dashboard/types';
+import { GetUsersUseCase } from '@/domain/usecases/user/getUsers';
 
 export default function DashboardPage() {
   const viewModel = container.get<DashboardViewModel>(TYPES.DashboardViewModel);
@@ -113,18 +114,12 @@ export default function DashboardPage() {
   };
 
   const fetchUsers = async () => {
-    setLoading(true);
     try {
-      const users = await viewModel.getUsers();
-      setUsers(users);
+      const getUsersUseCase = container.get<GetUsersUseCase>(TYPES.GetUsersUseCase);
+      const fetchedUsers = await getUsersUseCase.execute();
+      setUsers(fetchedUsers);
     } catch (error) {
-      setSnackbar({
-        open: true,
-        message: 'Failed to fetch users',
-        severity: 'error'
-      });
-    } finally {
-      setLoading(false);
+      console.error('Error fetching users:', error);
     }
   };
 

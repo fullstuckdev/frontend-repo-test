@@ -32,9 +32,6 @@ export class RegisterUseCase {
       photoURL: `https://api.dicebear.com/7.x/avatars/svg?seed=${credentials.email}`,
       role: 'user',
       isActive: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      lastLogin: new Date().toISOString(),
     };
 
     const user = await this.userRepository.createUser(userCredential.user.uid, userData);

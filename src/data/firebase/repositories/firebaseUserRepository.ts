@@ -88,4 +88,21 @@ export class FirebaseUserRepository implements UserRepository {
       updatedAt: data.updatedAt || new Date().toISOString(),
     } as UserData;
   }
+
+  async getUsersExceptCurrent(): Promise<UserData[]> {
+    const currentUser = auth.currentUser;
+    const querySnapshot = await getDocs(collection(db, this.collectionName));
+    
+    return querySnapshot.docs
+      .filter(doc => doc.id !== currentUser?.uid)
+      .map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt || new Date().toISOString(),
+          updatedAt: data.updatedAt || new Date().toISOString(),
+        } as UserData;
+      });
+  }
 } 

@@ -23,10 +23,6 @@ export class LoginUseCase {
     );
     
     const token = await userCredential.user.getIdToken();
-    if (!token) {
-      throw new Error('Failed to get authentication token');
-    }
-    
     const userData = await this.userRepository.getUserById(userCredential.user.uid);
     
     return {
