@@ -153,6 +153,19 @@ export default function DashboardPage() {
     const token = localStorage.getItem('token');
     if (!token) {
       router.push('/');
+    } else if (!currentUser) {
+      const restoreUserSession = async () => {
+        try {
+          const userData = await userApi.fetchUsersData(token);
+          dispatch(setUser({ ...userData, token }));
+        } catch (error) {
+          console.error('Failed to restore session:', error);
+          localStorage.removeItem('token');
+          router.push('/');
+        }
+      };
+      
+      restoreUserSession();
     }
   }, []);
 
@@ -167,18 +180,15 @@ export default function DashboardPage() {
   };
 
   const fetchUsers = async () => {
-    if (!currentUser?.token) {
-      setSnackbar({
-        open: true,
-        message: 'Authentication token is missing',
-        severity: 'error' as const
-      });
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/');
       return;
     }
     
     setLoading(true);
     try {
-      const response = await userApi.fetchUsersData(currentUser.token);
+      const response = await userApi.fetchUsersData(token);
       setUsers(response.data);
     } catch (error) {
       const errorMessage = handleApiError(error);
