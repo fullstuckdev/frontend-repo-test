@@ -1,34 +1,26 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import {
   Box,
   Card,
   CardContent,
-  TextField,
-  Button,
   Typography,
   Container,
-  InputAdornment,
-  IconButton,
+  Button,
   useTheme,
   useMediaQuery
 } from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { LoginForm } from '@/ui/components/auth/LoginForm/LoginForm';
 import { setUser, setLoading, setError } from '@/store/slices/authSlice';
 import type { RootState } from '@/store';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth } from '@/config/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import type { User } from '@/types';
-import { db } from '@/config/firebase';
+import { container } from '@/ioc/container';
+import { TYPES } from '@/ioc/types';
+import type { LoginUseCase } from '@/domain/usecases/auth/login';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const dispatch = useDispatch();
   const router = useRouter();
   const theme = useTheme();
@@ -42,33 +34,17 @@ export default function LoginPage() {
     }
   }, []);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (credentials: { email: string; password: string }) => {
     dispatch(setLoading(true));
     dispatch(setError(null));
     
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const token = await userCredential.user.getIdToken();
+      const loginUseCase = container.get<LoginUseCase>(TYPES.LoginUseCase);
+      const result = await loginUseCase.execute(credentials);
       
-      const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
-      if (userDoc.exists()) {
-        const userData = userDoc.data() as Omit<User, 'id' | 'token'>;
-        
-        dispatch(setUser({
-          ...userData,
-          id: userDoc.id,
-          token,
-          isActive: userData.isActive ?? true,
-          role: userData.role || 'user',
-          displayName: userData.displayName || '',
-          photoURL: userData.photoURL || '',
-          email: userData.email || '',
-        }));
-        
-        localStorage.setItem('token', token);
-        router.push('/dashboard');
-      }
+      dispatch(setUser(result));
+      localStorage.setItem('token', result.token);
+      router.push('/dashboard');
     } catch (err) {
       dispatch(setError(err instanceof Error ? err.message : 'Login failed'));
     } finally {
@@ -129,146 +105,37 @@ export default function LoginPage() {
             >
               Welcome Back
             </Typography>
-            <form onSubmit={handleLogin}>
-              <TextField
-                fullWidth
-                label="Email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                margin="normal"
-                required
-                sx={{ 
-                  mb: 3,
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '12px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15)',
-                    },
-                    '&.Mui-focused': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15)',
-                    },
-                  },
-                }}
-              />
-              <TextField
-                fullWidth
-                label="Password"
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{ 
-                  mb: 3,
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '12px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15)',
-                    },
-                    '&.Mui-focused': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15)',
-                    },
-                  },
-                }}
-              />
-              {error && (
-                <Box
-                  sx={{
-                    mt: 2,
-                    p: 2,
-                    borderRadius: '12px',
-                    backgroundColor: 'rgba(211, 47, 47, 0.1)',
-                    border: '1px solid rgba(211, 47, 47, 0.3)',
-                  }}
-                >
-                  <Typography color="#D32F2F" align="center" fontSize="0.9rem" fontWeight={500}>
-                    {error}
-                  </Typography>
-                </Box>
-              )}
-              <Button
-                fullWidth
-                variant="contained"
-                type="submit"
-                disabled={loading}
-                sx={{ 
-                  mt: 4,
-                  py: 2,
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  borderRadius: '12px',
-                  textTransform: 'none',
-                  backdropFilter: 'blur(10px)',
-                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                  color: '#1976D2',
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15)',
-                  },
-                  '&:active': {
-                    transform: 'translateY(-1px)',
-                  },
-                }}
-              >
-                {loading ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <span>Signing in</span>
-                    <Box sx={{ display: 'flex', gap: 0.5 }}>
-                      <span className="dot">.</span>
-                      <span className="dot">.</span>
-                      <span className="dot">.</span>
-                    </Box>
-                  </Box>
-                ) : 'Sign In'}
-              </Button>
-              <Button
-                fullWidth
-                onClick={() => router.push('/register')}
-                sx={{ 
-                  mt: 2,
-                  py: 1.5,
-                  borderRadius: '12px',
-                  textTransform: 'none',
-                  fontSize: '1rem',
-                  fontWeight: 500,
-                  backdropFilter: 'blur(10px)',
-                  backgroundColor: 'rgba(25, 118, 210, 0.1)',
-                  color: '#1976D2',
-                  border: '1px solid rgba(25, 118, 210, 0.3)',
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    backgroundColor: 'rgba(25, 118, 210, 0.15)',
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(25, 118, 210, 0.15)',
-                  },
-                }}
-              >
-                Don't have an account? Register now
-              </Button>
-            </form>
+            
+            <LoginForm
+              onSubmit={handleLogin}
+              loading={loading}
+              error={error}
+            />
+
+            <Button
+              fullWidth
+              onClick={() => router.push('/register')}
+              sx={{ 
+                mt: 2,
+                py: 1.5,
+                borderRadius: '12px',
+                textTransform: 'none',
+                fontSize: '1rem',
+                fontWeight: 500,
+                backdropFilter: 'blur(10px)',
+                backgroundColor: 'rgba(25, 118, 210, 0.1)',
+                color: '#1976D2',
+                border: '1px solid rgba(25, 118, 210, 0.3)',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  backgroundColor: 'rgba(25, 118, 210, 0.15)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(25, 118, 210, 0.15)',
+                },
+              }}
+            >
+              Don't have an account? Register now
+            </Button>
           </CardContent>
         </Card>
       </Box>
