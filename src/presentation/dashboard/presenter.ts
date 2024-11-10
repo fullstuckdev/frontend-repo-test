@@ -3,8 +3,8 @@ import { DashboardPresenterState, DashboardViewModel } from './models';
 import { setUser } from '@/dataStore/auth/slice';
 import { useDispatch } from 'react-redux';
 import { useRouter } from 'next/navigation';
-import { auth } from '@/data/firebase';
-import { User } from '@/domain/models/user';
+import { auth } from '@/config/firebase';
+import type { User } from '@/types';
 
 export class DashboardPresenter {
   constructor(
@@ -34,7 +34,7 @@ export class DashboardPresenter {
   async fetchUsers(): Promise<void> {
     this.updateViewModel({ loading: true });
     try {
-      const users = await this.userRepository.fetchUsers();
+      const users = await this.userRepository.getUsers();
       this.updateViewModel({ users });
       this.showSnackbar('Users loaded successfully', 'success');
     } catch (error) {
@@ -69,7 +69,7 @@ export class DashboardPresenter {
         const unsubscribe = auth.onAuthStateChanged(async (user) => {
           unsubscribe();
           if (user) {
-            const userData = await this.userRepository.fetchUser(user.uid);
+            const userData = await this.userRepository.getUserById(user.uid);
             const token = await user.getIdToken(true);
             this.dispatch(setUser({ ...userData, token }));
             localStorage.setItem('token', token);

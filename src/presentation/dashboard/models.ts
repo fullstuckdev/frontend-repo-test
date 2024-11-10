@@ -1,8 +1,8 @@
-import { User } from '@/domain/models/user';
+import type { UserData } from '@/types';
 
 export interface DashboardViewModel {
-  users: User[];
-  selectedUser: User | null;
+  users: UserData[];
+  selectedUser: UserData | null;
   loading: boolean;
   error: string | null;
   snackbar: {
@@ -23,8 +23,8 @@ export interface DashboardPresenterState {
 
 export interface DashboardPresenterActions {
   fetchUsers: () => Promise<void>;
-  updateUser: (userId: string, userData: Partial<User>) => Promise<void>;
+  updateUser: (userId: string, userData: Partial<UserData>) => Promise<void>;
   deleteUser: (userId: string) => Promise<void>;
   restoreSession: () => Promise<void>;
   logout: () => Promise<void>;
-} 
+}
