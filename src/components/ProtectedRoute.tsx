@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
+import { RootState } from '@/dataStore/store';
 import { CircularProgress, Box } from '@mui/material';
 
 export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
