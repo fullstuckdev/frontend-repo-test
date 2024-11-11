@@ -1,7 +1,7 @@
 'use client';
 
 import Head from 'next/head';
-import ClientWrapper from '@/components/ClientWrapper';
+import { ClientOnly } from '@/ui/components/common/ClientOnly/ClientOnly';
 import LoginPage from '@/app/login/page';
 
 export default function Home() {
@@ -10,9 +10,9 @@ export default function Home() {
       <Head>
         <title>Login</title>
       </Head>
-      <ClientWrapper>
+      <ClientOnly>
         <LoginPage />
-      </ClientWrapper>
+      </ClientOnly>
     </>
   );
 }

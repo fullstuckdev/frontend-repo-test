@@ -4,8 +4,7 @@ import { Providers } from './providers';
 import '@/ui/styles/globals.css';
 
 export const metadata: Metadata = {
-  title: 'My App - Home',
-  description: 'Welcome to My App',
+  title: 'Register',
 };
 
 export default function RootLayout({
