@@ -1,7 +1,6 @@
 'use client';
-
+import 'reflect-metadata';
 import { useEffect } from 'react';
-import '../lib/reflect';
 import { Provider } from 'react-redux';
 import { store } from '@/dataStore/store';
 import { ThemeProvider } from '@mui/material/styles';

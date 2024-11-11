@@ -1,4 +1,4 @@
-'reflect-metadata';
+import 'reflect-metadata';
 import { Container } from 'inversify';
 import { TYPES } from './types';
 import { FirebaseAuthService } from '@/infrastructure/services/firebaseAuthService';

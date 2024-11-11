@@ -8,7 +8,7 @@ import { container } from '@/ioc/container';
 import { TYPES } from '@/ioc/types';
 import type { DashboardViewModel } from '@/ui/viewmodels/DashboardViewModel';
 import type { RootState } from '@/dataStore/store';
-import type { User } from '@/domain/models/user';
+import type { User } from '@/types';
 import { setUser } from '@/dataStore/auth/slice';
 import Head from 'next/head';
 import {
